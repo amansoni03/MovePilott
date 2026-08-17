@@ -985,9 +985,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const startStop = newRoute.stops[0] || schoolCenter;
     const path = newRoute.path || generatePath(schoolCenter, startStop, 25);
     
-    const stops: RouteStop[] = newRoute.stops.map(st => ({
+    const stops: RouteStop[] = newRoute.stops.map((st: Omit<RouteStop, 'status' | 'boardedCount'>) => ({
       ...st,
-      status: 'pending',
+      status: 'pending' as const,
       boardedCount: 0
     }));
 
