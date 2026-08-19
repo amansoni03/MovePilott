@@ -57,9 +57,9 @@ export const AddRouteModal: React.FC<AddRouteModalProps> = ({ isOpen, onClose })
 
   if (!isOpen) return null;
 
-  // Search places via Nominatim OpenStreetMap API (Free, zero config)
+  // Search places via server-backed Geocode API route
   const searchPlaces = async (index: number, queryText: string) => {
-    if (!queryText || queryText.length < 3) {
+    if (!queryText || queryText.length < 2) {
       setStops(prev => prev.map((st, i) => i === index ? { ...st, suggestions: [], loading: false } : st));
       return;
     }
@@ -67,11 +67,7 @@ export const AddRouteModal: React.FC<AddRouteModalProps> = ({ isOpen, onClose })
     setStops(prev => prev.map((st, i) => i === index ? { ...st, loading: true } : st));
 
     try {
-      // Prioritize Uttar Pradesh / India locations
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(queryText + ', Uttar Pradesh')}&countrycodes=in&limit=5`,
-        { headers: { 'User-Agent': 'SchoolTransportConsole/1.0' } }
-      );
+      const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(queryText)}`);
       const data = await res.json();
 
       setStops(prev => prev.map((st, i) => i === index ? {

@@ -132,19 +132,16 @@ export const RouteOptimizerView: React.FC = () => {
     fetchAllRealOSRMAlternatives();
   }, [startCoords, destCoords]);
 
-  // OpenStreetMap Nominatim Live Autocomplete API
+  // Server-Backed Geocoding & Autocomplete API
   const searchLocation = async (query: string, setSuggestions: (s: LocationSuggestion[]) => void, setLoading: (l: boolean) => void) => {
-    if (!query || query.trim().length < 3) {
+    if (!query || query.trim().length < 2) {
       setSuggestions([]);
       setLoading(false);
       return;
     }
     setLoading(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Uttar Pradesh')}&countrycodes=in&limit=5`,
-        { headers: { 'User-Agent': 'SchoolTransportConsole/1.0' } }
-      );
+      const res = await fetch(`/api/geocode/suggest?q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setSuggestions(data || []);
     } catch {
@@ -157,25 +154,23 @@ export const RouteOptimizerView: React.FC = () => {
   const handleStartChange = (val: string) => {
     setStartQuery(val);
     if (startDebounce.current) clearTimeout(startDebounce.current);
-    startDebounce.current = setTimeout(() => searchLocation(val, setStartSuggestions, setStartLoading), 400);
+    startDebounce.current = setTimeout(() => searchLocation(val, setStartSuggestions, setStartLoading), 300);
   };
 
   const handleDestChange = (val: string) => {
     setDestQuery(val);
     if (destDebounce.current) clearTimeout(destDebounce.current);
-    destDebounce.current = setTimeout(() => searchLocation(val, setDestSuggestions, setDestLoading), 400);
+    destDebounce.current = setTimeout(() => searchLocation(val, setDestSuggestions, setDestLoading), 300);
   };
 
   const selectStart = (sugg: LocationSuggestion) => {
-    const clean = sugg.display_name.split(',').slice(0, 3).join(',').trim();
-    setStartQuery(clean);
+    setStartQuery(sugg.display_name);
     setStartCoords({ lat: parseFloat(sugg.lat), lng: parseFloat(sugg.lon) });
     setStartSuggestions([]);
   };
 
   const selectDest = (sugg: LocationSuggestion) => {
-    const clean = sugg.display_name.split(',').slice(0, 3).join(',').trim();
-    setDestQuery(clean);
+    setDestQuery(sugg.display_name);
     setDestCoords({ lat: parseFloat(sugg.lat), lng: parseFloat(sugg.lon) });
     setDestSuggestions([]);
   };
@@ -345,25 +340,46 @@ export const RouteOptimizerView: React.FC = () => {
                   <div className="relative flex items-center">
                     <input
                       type="text"
-                      placeholder="Type start place (e.g., Hazratganj)..."
+                      placeholder="Type start place or address..."
                       value={startQuery}
                       onChange={(e) => handleStartChange(e.target.value)}
-                      className="w-full pl-8 pr-8 py-2 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs"
+                      onFocus={() => {
+                        if (startQuery.length >= 2 && startSuggestions.length === 0) {
+                          searchLocation(startQuery, setStartSuggestions, setStartLoading);
+                        }
+                      }}
+                      className="w-full pl-8 pr-7 py-2 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs font-medium"
                     />
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5" />
-                    {startLoading && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin absolute right-2.5" />}
+                    {startLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin absolute right-2.5" />
+                    ) : startQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStartQuery('');
+                          setStartSuggestions([]);
+                        }}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    ) : null}
                   </div>
 
                   {startSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[100] max-h-56 overflow-y-auto divide-y divide-slate-100">
                       {startSuggestions.map((sugg, sIdx) => (
                         <div
                           key={sIdx}
                           onClick={() => selectStart(sugg)}
-                          className="px-3 py-2 text-xs hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex items-start gap-2 text-slate-700"
+                          className="px-3.5 py-2.5 text-xs hover:bg-blue-50/80 transition-colors cursor-pointer flex items-start gap-2.5 text-slate-700"
                         >
                           <MapPin className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0 mt-0.5" />
-                          <span className="line-clamp-2 leading-snug">{sugg.display_name}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="line-clamp-2 leading-snug font-medium text-slate-800">{sugg.display_name}</p>
+                            <span className="text-[9px] text-slate-400 font-mono">Lat: {parseFloat(sugg.lat).toFixed(4)}, Lng: {parseFloat(sugg.lon).toFixed(4)}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -376,25 +392,46 @@ export const RouteOptimizerView: React.FC = () => {
                   <div className="relative flex items-center">
                     <input
                       type="text"
-                      placeholder="Type destination (e.g., Krishna Nagar)..."
+                      placeholder="Type destination or address..."
                       value={destQuery}
                       onChange={(e) => handleDestChange(e.target.value)}
-                      className="w-full pl-8 pr-8 py-2 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs"
+                      onFocus={() => {
+                        if (destQuery.length >= 2 && destSuggestions.length === 0) {
+                          searchLocation(destQuery, setDestSuggestions, setDestLoading);
+                        }
+                      }}
+                      className="w-full pl-8 pr-7 py-2 border border-slate-200 rounded-xl bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-xs font-medium"
                     />
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5" />
-                    {destLoading && <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin absolute right-2.5" />}
+                    {destLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 text-blue-500 animate-spin absolute right-2.5" />
+                    ) : destQuery ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDestQuery('');
+                          setDestSuggestions([]);
+                        }}
+                        className="absolute right-2 text-slate-400 hover:text-slate-600 text-xs font-bold"
+                      >
+                        ✕
+                      </button>
+                    ) : null}
                   </div>
 
                   {destSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 max-h-48 overflow-y-auto">
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-slate-200 rounded-2xl shadow-2xl z-[100] max-h-56 overflow-y-auto divide-y divide-slate-100">
                       {destSuggestions.map((sugg, sIdx) => (
                         <div
                           key={sIdx}
                           onClick={() => selectDest(sugg)}
-                          className="px-3 py-2 text-xs hover:bg-blue-50 cursor-pointer border-b border-slate-50 last:border-0 flex items-start gap-2 text-slate-700"
+                          className="px-3.5 py-2.5 text-xs hover:bg-blue-50/80 transition-colors cursor-pointer flex items-start gap-2.5 text-slate-700"
                         >
                           <MapPin className="w-3.5 h-3.5 text-red-500 flex-shrink-0 mt-0.5" />
-                          <span className="line-clamp-2 leading-snug">{sugg.display_name}</span>
+                          <div className="flex-1 min-w-0">
+                            <p className="line-clamp-2 leading-snug font-medium text-slate-800">{sugg.display_name}</p>
+                            <span className="text-[9px] text-slate-400 font-mono">Lat: {parseFloat(sugg.lat).toFixed(4)}, Lng: {parseFloat(sugg.lon).toFixed(4)}</span>
+                          </div>
                         </div>
                       ))}
                     </div>
