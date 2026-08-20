@@ -3,8 +3,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
 import { OptimizerMap } from '@/components/OptimizerMap';
-import { 
-  Sparkles, Route as RouteIcon, MapPin, CloudRain, Construction, 
+import {
+  Sparkles, Route as RouteIcon, MapPin, CloudRain, Construction,
   Car, Leaf, Clock, ArrowRight, CheckCircle2, ShieldAlert, Cpu, Fuel, Search, Loader2, Navigation, Map as MapIcon
 } from 'lucide-react';
 
@@ -36,7 +36,7 @@ export const RouteOptimizerView: React.FC = () => {
   const [favorablePath, setFavorablePath] = useState<[number, number][]>([]);
   const [shortestPath, setShortestPath] = useState<[number, number][]>([]);
   const [safetyBypassPath, setSafetyBypassPath] = useState<[number, number][]>([]);
-  
+
   const [osrmFavorableDist, setOsrmFavorableDist] = useState<number>(9.6);
   const [osrmFavorableDuration, setOsrmFavorableDuration] = useState<number>(20);
 
@@ -219,7 +219,7 @@ export const RouteOptimizerView: React.FC = () => {
     },
     {
       id: 'shortest',
-      name: 'Shortest Distance Route',
+      name: 'Another Available Route',
       color: '#f59e0b', // Bright Amber Orange
       path: shortestPath,
       distance: shortestDistance,
@@ -295,17 +295,15 @@ export const RouteOptimizerView: React.FC = () => {
           <div className="flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
             <button
               onClick={() => setSelectionMode('custom')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                selectionMode === 'custom' ? 'bg-blue-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${selectionMode === 'custom' ? 'bg-blue-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               📍 Enter Custom Origin & Destination (Any Location)
             </button>
             <button
               onClick={() => setSelectionMode('existing')}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
-                selectionMode === 'existing' ? 'bg-blue-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
-              }`}
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${selectionMode === 'existing' ? 'bg-blue-600 text-white shadow-xs font-bold' : 'text-slate-600 hover:text-slate-900'
+                }`}
             >
               🚌 Select Database Route
             </button>
@@ -526,11 +524,10 @@ export const RouteOptimizerView: React.FC = () => {
                 <button
                   key={r.id}
                   onClick={() => setSelectedCandidateId(r.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${
-                    selectedCandidateId === r.id
-                      ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${selectedCandidateId === r.id
+                    ? 'bg-slate-900 text-white border-slate-900 shadow-sm font-bold'
+                    : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
                 >
                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color }}></span>
                   <span>{r.name}</span>
@@ -566,11 +563,10 @@ export const RouteOptimizerView: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
             {/* 1. AI ML Favorable Route Card (RECOMMENDED / FEATURED) */}
-            <div 
+            <div
               onClick={() => setSelectedCandidateId('ai-favorable')}
-              className={`bg-gradient-to-b from-white to-blue-50/40 rounded-3xl p-6 shadow-xl relative flex flex-col justify-between space-y-5 cursor-pointer transition-all ${
-                selectedCandidateId === 'ai-favorable' ? 'border-2 border-emerald-500 ring-4 ring-emerald-100' : 'border border-slate-200'
-              }`}
+              className={`bg-gradient-to-b from-white to-blue-50/40 rounded-3xl p-6 shadow-xl relative flex flex-col justify-between space-y-5 cursor-pointer transition-all ${selectedCandidateId === 'ai-favorable' ? 'border-2 border-emerald-500 ring-4 ring-emerald-100' : 'border border-slate-200'
+                }`}
             >
               <div className="absolute -top-3 left-6 px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-full text-[10px] font-extrabold uppercase tracking-wider flex items-center gap-1 shadow-md">
                 <Sparkles className="w-3 h-3" /> Most Favorable AI Route
@@ -639,16 +635,15 @@ export const RouteOptimizerView: React.FC = () => {
             </div>
 
             {/* 2. Shortest Distance Route Card */}
-            <div 
+            <div
               onClick={() => setSelectedCandidateId('shortest')}
-              className={`bg-white rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-5 cursor-pointer transition-all ${
-                selectedCandidateId === 'shortest' ? 'border-2 border-amber-500 ring-4 ring-amber-100' : 'border border-slate-200'
-              }`}
+              className={`bg-white rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-5 cursor-pointer transition-all ${selectedCandidateId === 'shortest' ? 'border-2 border-amber-500 ring-4 ring-amber-100' : 'border border-slate-200'
+                }`}
             >
               <div className="space-y-3">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h4 className="font-bold text-slate-900 text-base">Shortest Distance Route</h4>
+                    <h4 className="font-bold text-slate-900 text-base">Another Available  Route</h4>
                     <p className="text-[11px] text-slate-500">Direct inner arterial path (High traffic risk)</p>
                   </div>
                   <span className="px-2.5 py-1 bg-amber-100 text-amber-800 font-extrabold text-[10px] uppercase rounded-full">
@@ -697,11 +692,10 @@ export const RouteOptimizerView: React.FC = () => {
             </div>
 
             {/* 3. Alternate Safety Bypass Route Card */}
-            <div 
+            <div
               onClick={() => setSelectedCandidateId('safety-bypass')}
-              className={`bg-white rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-5 cursor-pointer transition-all ${
-                selectedCandidateId === 'safety-bypass' ? 'border-2 border-blue-500 ring-4 ring-blue-100' : 'border border-slate-200'
-              }`}
+              className={`bg-white rounded-3xl p-6 shadow-xs flex flex-col justify-between space-y-5 cursor-pointer transition-all ${selectedCandidateId === 'safety-bypass' ? 'border-2 border-blue-500 ring-4 ring-blue-100' : 'border border-slate-200'
+                }`}
             >
               <div className="space-y-3">
                 <div className="flex justify-between items-start">
