@@ -19,8 +19,15 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose 
 
   if (!isOpen) return null;
 
-  // Only show buses that are in active/maintenance state and have routes assigned
-  const activeBuses = vehicles.filter(v => v.status === 'active' && v.routeId);
+  // Show all buses that could need emergency help — active, running, even already in emergency
+  // Exclude only fully inactive/decommissioned buses
+  const activeBuses = vehicles
+    .filter(v => v.status !== 'inactive')
+    .sort((a, b) => {
+      // Sort: emergency first, then active, then maintenance
+      const order: Record<string, number> = { emergency: 0, active: 1, maintenance: 2 };
+      return (order[a.status] ?? 3) - (order[b.status] ?? 3);
+    });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,19 +108,29 @@ export const EmergencyModal: React.FC<EmergencyModalProps> = ({ isOpen, onClose 
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
               Select Affected Bus
             </label>
-            <select
-              value={busId}
-              onChange={(e) => setBusId(e.target.value)}
-              className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-slate-50 font-medium"
-              required
-            >
-              <option value="">-- Choose Active Bus --</option>
-              {activeBuses.map(v => (
-                <option key={v.id} value={v.id}>
-                  {v.busNumber} ({v.registrationNumber}) - {routes.find(r => r.id === v.routeId)?.routeNumber || 'No Route'}
-                </option>
-              ))}
-            </select>
+            {activeBuses.length === 0 ? (
+              <div className="w-full px-3.5 py-2.5 border border-red-200 rounded-xl bg-red-50 text-red-600 text-xs font-semibold">
+                ⚠️ No vehicles found. Make sure vehicles are added to the fleet.
+              </div>
+            ) : (
+              <select
+                value={busId}
+                onChange={(e) => setBusId(e.target.value)}
+                className="w-full px-3.5 py-2 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent text-sm bg-slate-50 font-medium"
+                required
+              >
+                <option value="">-- Choose Affected Bus ({activeBuses.length} available) --</option>
+                {activeBuses.map(v => {
+                  const route = routes.find(r => r.id === v.routeId);
+                  const statusLabel = v.status === 'emergency' ? ' 🚨 EMERGENCY' : v.status === 'maintenance' ? ' 🔧 Maintenance' : ' ✅ Active';
+                  return (
+                    <option key={v.id} value={v.id}>
+                      {v.busNumber} ({v.registrationNumber}){statusLabel}{route ? ` — ${route.routeNumber}` : ''}
+                    </option>
+                  );
+                })}
+              </select>
+            )}
           </div>
 
           {/* Severity */}

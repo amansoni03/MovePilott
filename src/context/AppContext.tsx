@@ -525,13 +525,54 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         last_ping_time:   g.lastPingTime,
       });
 
-      // Fire bulk upserts in parallel
+      // camelCase → snake_case mapper for emergencies
+      const toDbEmergency = (e: EmergencyEvent) => ({
+        id:               e.id,
+        bus_id:           e.busId    || null,
+        route_id:         e.routeId  || null,
+        location_lat:     e.location.lat,
+        location_lng:     e.location.lng,
+        time:             e.time,
+        severity:         e.severity,
+        description:      e.description,
+        type:             e.type,
+        status:           e.status,
+        driver_id:        e.driverId || null,
+        students_onboard: e.studentsOnboard,
+        resolved_time:    e.resolvedTime ?? null,
+      });
+
+      // camelCase → snake_case mapper for notifications
+      const toDbNotification = (n: Notification) => ({
+        id:       n.id,
+        type:     n.type,
+        message:  n.message,
+        time:     n.time,
+        bus_id:   n.busId   || null,
+        route_id: n.routeId || null,
+        read:     n.read,
+      });
+
+      // camelCase → snake_case mapper for activities
+      const toDbActivity = (a: Activity) => ({
+        id:       a.id,
+        text:     a.text,
+        time:     a.time,
+        bus_id:   a.busId   || null,
+        route_id: a.routeId || null,
+        type:     a.type,
+      });
+
+      // Fire bulk upserts in parallel — includes emergencies, notifications, activities
       Promise.all([
-        ...vehicles.map(v   => upsertRecord('vehicles',    toDbVehicle(v))),
-        ...drivers.map(d    => upsertRecord('drivers',     toDbDriver(d))),
-        ...students.map(s   => upsertRecord('students',    toDbStudent(s))),
-        ...routes.map(r     => upsertRecord('routes',      toDbRoute(r))),
-        ...gpsDevices.map(g => upsertRecord('gps_devices', toDbGps(g))),
+        ...vehicles.map(v      => upsertRecord('vehicles',     toDbVehicle(v))),
+        ...drivers.map(d       => upsertRecord('drivers',      toDbDriver(d))),
+        ...students.map(s      => upsertRecord('students',     toDbStudent(s))),
+        ...routes.map(r        => upsertRecord('routes',       toDbRoute(r))),
+        ...gpsDevices.map(g    => upsertRecord('gps_devices',  toDbGps(g))),
+        ...emergencies.map(e   => upsertRecord('emergencies',  toDbEmergency(e))),
+        ...notifications.map(n => upsertRecord('notifications',toDbNotification(n))),
+        ...activities.map(a    => upsertRecord('activities',   toDbActivity(a))),
       ]).catch(() => {/* errors already logged inside upsertRecord */});
     }, 3000); // 3-second debounce
 
@@ -1252,7 +1293,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
     setEmergies(prev => [newEvent, ...prev]);
     
-    // Update vehicle status
+    // ── Immediately persist SOS alert to Supabase ─────────────────────────
+    if (isSupabaseConfigured()) {
+      upsertRecord('emergencies', {
+        id:               newEvent.id,
+        bus_id:           newEvent.busId    || null,
+        route_id:         newEvent.routeId  || null,
+        location_lat:     newEvent.location.lat,
+        location_lng:     newEvent.location.lng,
+        time:             newEvent.time,
+        severity:         newEvent.severity,
+        description:      newEvent.description,
+        type:             newEvent.type,
+        status:           newEvent.status,
+        driver_id:        newEvent.driverId || null,
+        students_onboard: newEvent.studentsOnboard,
+        resolved_time:    null,
+      }).catch(() => {});
+    }
+
+    // Update vehicle status to emergency in DB
     setVehicles(prev => prev.map(v => v.id === event.busId ? { ...v, status: 'emergency' } : v));
     
     // Add activity and notification
@@ -1266,6 +1326,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     if (ev) {
       addActivity(`Emergency ${ev.id} acknowledged by Admin.`, 'general', ev.busId, ev.routeId);
       sendNotification('info', `Emergency alert ${ev.id} has been acknowledged. Action is being taken.`, ev.busId, ev.routeId);
+      // Persist status change to Supabase immediately
+      if (isSupabaseConfigured() && supabase) {
+        supabase.from('emergencies').update({ status: 'acknowledged' }).eq('id', id).then(() => {});
+      }
     }
   };
 
@@ -1274,6 +1338,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const ev = emergencies.find(e => e.id === id);
     if (ev) {
       addActivity(`Response dispatch initiated for Emergency ${ev.id}.`, 'general', ev.busId, ev.routeId);
+      // Persist status change to Supabase immediately
+      if (isSupabaseConfigured() && supabase) {
+        supabase.from('emergencies').update({ status: 'responding' }).eq('id', id).then(() => {});
+      }
     }
   };
 
@@ -1288,6 +1356,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       
       // Revert vehicle status back to active
       setVehicles(prev => prev.map(v => v.id === ev.busId ? { ...v, status: 'active' } : v));
+
+      // Persist resolved status + time to Supabase immediately
+      if (isSupabaseConfigured() && supabase) {
+        supabase.from('emergencies').update({ status: 'resolved', resolved_time: timeStr }).eq('id', id).then(() => {});
+      }
     }
   };
 

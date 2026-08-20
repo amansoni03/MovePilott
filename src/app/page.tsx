@@ -60,7 +60,7 @@ export default function SplashAndLogin() {
         </div>
 
         {/* Center Title */}
-        <h1 
+        <h1
           className="text-5xl md:text-7xl font-bold text-center px-4 tracking-wide leading-tight mb-8"
           style={{
             background: 'linear-gradient(to bottom, #fef08a 0%, #b45309 100%)',
@@ -69,7 +69,7 @@ export default function SplashAndLogin() {
             filter: 'drop-shadow(0px 4px 6px rgba(0,0,0,0.8)) drop-shadow(0px 1px 2px rgba(0,0,0,1))'
           }}
         >
-          School Transport <br /> Safety Console
+          MOVE_PILOT <br />School Mobility Safety Console
         </h1>
 
         {/* === OPTION 1: PROFESSIONAL CIRCULAR SPINNER (ACTIVE) === */}
@@ -96,7 +96,8 @@ export default function SplashAndLogin() {
         */}
 
         {/* Injecting keyframes for the progress bar directly */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes fillProgress {
             0% { width: 0%; }
             100% { width: 95%; }
@@ -146,7 +147,7 @@ export default function SplashAndLogin() {
               backgroundImage: 'radial-gradient(circle at 100% 100%, white 2px, transparent 2px), radial-gradient(circle at 0% 0%, white 2px, transparent 2px), linear-gradient(45deg, transparent 48%, white 48%, white 52%, transparent 52%), linear-gradient(-45deg, transparent 48%, white 48%, white 52%, transparent 52%)',
               backgroundSize: '40px 40px'
             }}></div>
-            
+
             <div className="relative z-10">
               <div className="w-12 h-12 border border-white/50 rounded-xl flex items-center justify-center mb-8 bg-white/5 backdrop-blur-sm relative">
                 <div className="absolute inset-0 border border-white/20 rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -172,16 +173,16 @@ export default function SplashAndLogin() {
           >
             {/* Nodes/Tree Pattern */}
             <div className="absolute inset-0 opacity-[0.08] pointer-events-none flex items-end justify-end p-4">
-               <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
-                 <circle cx="150" cy="50" r="20" stroke="white" strokeWidth="4" />
-                 <circle cx="150" cy="50" r="8" fill="white" />
-                 <path d="M150 70 V 100 M150 100 L 100 150 M150 100 L 180 130 M100 150 V 180 M180 130 V 180 M100 150 L 70 120" stroke="white" strokeWidth="4" />
-                 <circle cx="100" cy="180" r="10" stroke="white" strokeWidth="3" />
-                 <circle cx="180" cy="180" r="10" stroke="white" strokeWidth="3" />
-                 <circle cx="70" cy="120" r="10" stroke="white" strokeWidth="3" />
-               </svg>
+              <svg width="200" height="200" viewBox="0 0 200 200" fill="none">
+                <circle cx="150" cy="50" r="20" stroke="white" strokeWidth="4" />
+                <circle cx="150" cy="50" r="8" fill="white" />
+                <path d="M150 70 V 100 M150 100 L 100 150 M150 100 L 180 130 M100 150 V 180 M180 130 V 180 M100 150 L 70 120" stroke="white" strokeWidth="4" />
+                <circle cx="100" cy="180" r="10" stroke="white" strokeWidth="3" />
+                <circle cx="180" cy="180" r="10" stroke="white" strokeWidth="3" />
+                <circle cx="70" cy="120" r="10" stroke="white" strokeWidth="3" />
+              </svg>
             </div>
-            
+
             <div className="relative z-10">
               <div className="w-12 h-12 border border-white/50 rounded-xl flex items-center justify-center mb-8 bg-white/5 backdrop-blur-sm relative">
                 <div className="absolute inset-0 border border-white/20 rounded-full scale-150 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
@@ -201,9 +202,10 @@ export default function SplashAndLogin() {
           </div>
 
         </div>
-        
+
         {/* Float Animation Keyframes */}
-        <style dangerouslySetInnerHTML={{__html: `
+        <style dangerouslySetInnerHTML={{
+          __html: `
           @keyframes float {
             0%, 100% { transform: translateY(0) translateX(0); }
             50% { transform: translateY(-20px) translateX(10px); }
