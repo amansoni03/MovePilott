@@ -38,9 +38,9 @@ export const TrackingView: React.FC = () => {
   const activeRoute = selectedRouteId ? routes.find(r => r.id === selectedRouteId) : null;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-8.5rem)] text-slate-800 fade-in">
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 text-slate-800 fade-in">
       {/* Map Content - 3 columns */}
-      <div className="lg:col-span-3 bg-white rounded-2xl p-4 border border-slate-100 shadow-xs flex flex-col h-full space-y-4">
+      <div className="lg:col-span-3 bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col space-y-4">
         {/* Map Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
@@ -89,14 +89,14 @@ export const TrackingView: React.FC = () => {
           </div>
         </div>
 
-        {/* The map */}
-        <div className="flex-1 w-full bg-slate-50 rounded-2xl relative overflow-hidden">
+        {/* The map wrapper (matching DashboardView fixed height pattern) */}
+        <div className="h-[520px] w-full bg-slate-50 rounded-2xl relative overflow-hidden border border-slate-100 shadow-inner">
           <LiveMap />
         </div>
       </div>
 
       {/* Control Sidebar Panel - 1 column */}
-      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col h-full overflow-hidden">
+      <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-xs flex flex-col h-[590px] lg:h-auto overflow-hidden">
         <h3 className="font-bold text-slate-900 text-sm">Active Fleet Feeds</h3>
         <p className="text-[10px] text-slate-400 font-semibold mb-4">Click a bus to display route details</p>
 

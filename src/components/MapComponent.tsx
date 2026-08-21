@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import React, { useEffect, useState, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { useApp, Route, Vehicle } from '@/context/AppContext';
 import { Bus, User, Users, MapPin, Gauge, Clock, ShieldAlert } from 'lucide-react';
 
@@ -57,11 +58,87 @@ const createCustomMarker = (bus: Vehicle, route: Route | undefined) => {
   return icon;
 };
 
-const MapComponent: React.FC = () => {
-  const { vehicles, routes, drivers, students, startRoute } = useApp();
-  const [selectedBus, setSelectedBus] = useState<Vehicle | null>(null);
+// Map Fix Controller: Handles size invalidation & initial fleet bounds fitting
+const MapContainerFixController: React.FC<{ vehicles: Vehicle[]; routes: Route[] }> = ({ vehicles, routes }) => {
+  const map = useMap();
+  const hasFitBoundsRef = useRef(false);
 
-  // Compute map center: if there are UP coordinates, center on UP/Lucknow, else default
+  useEffect(() => {
+    // Force Leaflet to recalculate container dimensions when mounted or resized
+    map.invalidateSize();
+    const t1 = setTimeout(() => map.invalidateSize(), 100);
+    const t2 = setTimeout(() => map.invalidateSize(), 300);
+    const t3 = setTimeout(() => map.invalidateSize(), 600);
+
+    const handleResize = () => {
+      map.invalidateSize();
+    };
+    window.addEventListener('resize', handleResize);
+
+    // IntersectionObserver: Triggers invalidateSize whenever map container becomes visible in viewport
+    const container = map.getContainer();
+    let observer: IntersectionObserver | null = null;
+    if (typeof IntersectionObserver !== 'undefined' && container) {
+      observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            map.invalidateSize();
+          }
+        });
+      });
+      observer.observe(container);
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      window.removeEventListener('resize', handleResize);
+      if (observer && container) {
+        observer.unobserve(container);
+        observer.disconnect();
+      }
+    };
+  }, [map]);
+
+  // Fit bounds to display active buses on map load
+  useEffect(() => {
+    if (hasFitBoundsRef.current) return;
+
+    const activeVehicles = vehicles.filter(v => v.routeId && (v.status === 'active' || v.status === 'emergency'));
+    const coords: [number, number][] = [];
+
+    activeVehicles.forEach(v => {
+      const r = routes.find(route => route.id === v.routeId);
+      if (r && Array.isArray(r.path) && r.path.length > 0) {
+        const c = r.path[r.currentPathIndex] || r.path[0];
+        if (c && c[0] && c[1] && typeof c[0] === 'number' && typeof c[1] === 'number' && !isNaN(c[0]) && !isNaN(c[1])) {
+          coords.push([c[0], c[1]]);
+        }
+      }
+    });
+
+    if (coords.length > 0) {
+      hasFitBoundsRef.current = true;
+      try {
+        if (coords.length === 1) {
+          map.setView(coords[0], 13);
+        } else {
+          map.fitBounds(coords as L.LatLngBoundsExpression, { padding: [50, 50], maxZoom: 14 });
+        }
+      } catch {
+        map.setView([26.8500, 80.9499], 12);
+      }
+    }
+  }, [vehicles, routes, map]);
+
+  return null;
+};
+
+const MapComponent: React.FC = () => {
+  const { vehicles, routes, drivers, students } = useApp();
+
+  // Compute default center (Lucknow / UP or active route)
   const defaultCenter: [number, number] = (() => {
     const activeRunning = routes.find(r => r.status === 'running' && Array.isArray(r.path) && r.path.length > 0);
     if (activeRunning && activeRunning.path[0]) {
@@ -70,28 +147,24 @@ const MapComponent: React.FC = () => {
     return [26.8500, 80.9499]; // Lucknow, Uttar Pradesh default
   })();
 
-  // Helper to find driver details
-  const getDriver = (driverId: string) => {
-    return drivers.find(d => d.id === driverId);
-  };
-
-  // Helper to find route details
-  const getRoute = (routeId: string) => {
-    return routes.find(r => r.id === routeId);
-  };
+  const getDriver = (driverId: string) => drivers.find(d => d.id === driverId);
+  const getRoute = (routeId: string) => routes.find(r => r.id === routeId);
 
   return (
-    <div className="w-full h-full relative border border-slate-100 rounded-2xl overflow-hidden shadow-inner">
+    <div className="w-full h-full min-h-[400px] relative border border-slate-100 rounded-2xl overflow-hidden shadow-inner bg-slate-100">
       <MapContainer 
         center={defaultCenter} 
         zoom={12} 
-        className="w-full h-full"
+        className="w-full h-full z-10"
         zoomControl={true}
       >
+        {/* Standard OpenStreetMap Tiles */}
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        <MapContainerFixController vehicles={vehicles} routes={routes} />
 
         {/* Polylines for active routes */}
         {routes
@@ -103,8 +176,8 @@ const MapComponent: React.FC = () => {
                 key={route.id}
                 positions={route.path}
                 color={colors[idx % colors.length]}
-                weight={4}
-                opacity={0.7}
+                weight={5}
+                opacity={0.8}
               />
             );
           })}
@@ -116,7 +189,6 @@ const MapComponent: React.FC = () => {
             const route = getRoute(bus.routeId);
             if (!route) return null;
 
-            // Get current coordinate based on simulation path index
             const currentCoord = route.path[route.currentPathIndex] || route.path[0];
             if (!currentCoord) return null;
 

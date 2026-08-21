@@ -342,7 +342,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             })));
           }
 
-          if (dbEmergencies.length)  setEmergies(dbEmergencies);
+          if (dbEmergencies.length) {
+            setEmergies(dbEmergencies.map((e: any) => ({
+              id: e.id,
+              busId: e.bus_id || e.busId || '',
+              routeId: e.route_id || e.routeId || '',
+              location: e.location || { lat: e.location_lat ?? 26.8500, lng: e.location_lng ?? 80.9499 },
+              time: e.time || '',
+              severity: e.severity || 'medium',
+              description: e.description || '',
+              type: e.type || 'Vehicle Breakdown',
+              status: e.status || 'active',
+              driverId: e.driver_id || e.driverId || '',
+              studentsOnboard: e.students_onboard ?? e.studentsOnboard ?? 0,
+              resolvedTime: e.resolved_time || e.resolvedTime || undefined
+            })));
+          }
           if (dbNotifications.length) setNotifications(dbNotifications);
           if (dbActivities.length)   setActivities(dbActivities);
 
@@ -526,21 +541,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       });
 
       // camelCase → snake_case mapper for emergencies
-      const toDbEmergency = (e: EmergencyEvent) => ({
-        id:               e.id,
-        bus_id:           e.busId    || null,
-        route_id:         e.routeId  || null,
-        location_lat:     e.location.lat,
-        location_lng:     e.location.lng,
-        time:             e.time,
-        severity:         e.severity,
-        description:      e.description,
-        type:             e.type,
-        status:           e.status,
-        driver_id:        e.driverId || null,
-        students_onboard: e.studentsOnboard,
-        resolved_time:    e.resolvedTime ?? null,
-      });
+      const toDbEmergency = (e: EmergencyEvent) => {
+        if (!e || typeof e !== 'object') return null;
+        const loc = e.location || (e as any);
+        return {
+          id:               e.id,
+          bus_id:           e.busId    || (e as any).bus_id || null,
+          route_id:         e.routeId  || (e as any).route_id || null,
+          location_lat:     loc?.lat ?? (e as any).location_lat ?? 26.8500,
+          location_lng:     loc?.lng ?? (e as any).location_lng ?? 80.9499,
+          time:             e.time || '',
+          severity:         e.severity || 'medium',
+          description:      e.description || '',
+          type:             e.type || 'Vehicle Breakdown',
+          status:           e.status || 'active',
+          driver_id:        e.driverId || (e as any).driver_id || null,
+          students_onboard: e.studentsOnboard ?? (e as any).students_onboard ?? 0,
+          resolved_time:    e.resolvedTime ?? (e as any).resolved_time ?? null,
+        };
+      };
 
       // camelCase → snake_case mapper for notifications
       const toDbNotification = (n: Notification) => ({
@@ -565,14 +584,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       // Fire bulk upserts in parallel — includes emergencies, notifications, activities
       Promise.all([
-        ...vehicles.map(v      => upsertRecord('vehicles',     toDbVehicle(v))),
-        ...drivers.map(d       => upsertRecord('drivers',      toDbDriver(d))),
-        ...students.map(s      => upsertRecord('students',     toDbStudent(s))),
-        ...routes.map(r        => upsertRecord('routes',       toDbRoute(r))),
-        ...gpsDevices.map(g    => upsertRecord('gps_devices',  toDbGps(g))),
-        ...emergencies.map(e   => upsertRecord('emergencies',  toDbEmergency(e))),
-        ...notifications.map(n => upsertRecord('notifications',toDbNotification(n))),
-        ...activities.map(a    => upsertRecord('activities',   toDbActivity(a))),
+        ...vehicles.filter(Boolean).map(v      => upsertRecord('vehicles',     toDbVehicle(v))),
+        ...drivers.filter(Boolean).map(d       => upsertRecord('drivers',      toDbDriver(d))),
+        ...students.filter(Boolean).map(s      => upsertRecord('students',     toDbStudent(s))),
+        ...routes.filter(Boolean).map(r        => upsertRecord('routes',       toDbRoute(r))),
+        ...gpsDevices.filter(Boolean).map(g    => upsertRecord('gps_devices',  toDbGps(g))),
+        ...emergencies.filter(Boolean).map(e   => toDbEmergency(e)).filter(Boolean).map(e => upsertRecord('emergencies', e!)),
+        ...notifications.filter(Boolean).map(n => upsertRecord('notifications',toDbNotification(n))),
+        ...activities.filter(Boolean).map(a    => upsertRecord('activities',   toDbActivity(a))),
       ]).catch(() => {/* errors already logged inside upsertRecord */});
     }, 3000); // 3-second debounce
 
@@ -1299,15 +1318,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         id:               newEvent.id,
         bus_id:           newEvent.busId    || null,
         route_id:         newEvent.routeId  || null,
-        location_lat:     newEvent.location.lat,
-        location_lng:     newEvent.location.lng,
+        location_lat:     newEvent.location?.lat ?? 26.8500,
+        location_lng:     newEvent.location?.lng ?? 80.9499,
         time:             newEvent.time,
         severity:         newEvent.severity,
         description:      newEvent.description,
         type:             newEvent.type,
         status:           newEvent.status,
         driver_id:        newEvent.driverId || null,
-        students_onboard: newEvent.studentsOnboard,
+        students_onboard: newEvent.studentsOnboard ?? 0,
         resolved_time:    null,
       }).catch(() => {});
     }

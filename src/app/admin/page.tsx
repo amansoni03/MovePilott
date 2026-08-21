@@ -215,9 +215,11 @@ function DashboardContainer() {
     return (
       <div className="w-full">
         {views.map(v => (
-          <div key={v.id} className={activeTab === v.id ? 'block' : 'hidden'}>
-            {v.comp}
-          </div>
+          activeTab === v.id ? (
+            <div key={v.id} className="block">
+              {v.comp}
+            </div>
+          ) : null
         ))}
       </div>
     );
